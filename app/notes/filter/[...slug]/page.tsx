@@ -22,20 +22,14 @@ interface NotesFilterPageProps {
   searchParams: Promise<{ page?: string; search?: string }>;
 }
 
-// 🔹 Хелпер, щоб уникати дублювання
+// 🔹 Хелпер для отримання тегу
 async function getFilterParams(
-  params: Promise<{ slug?: string[] }>,
-  searchParams: Promise<{ page?: string; search?: string }>
+  params: Promise<{ slug?: string[] }>
 ) {
   const { slug } = await params;
-  const { page: rawPage, search: rawSearch } = await searchParams;
-
-  const page = Number(rawPage) || 1;
-  const search = rawSearch || '';
   let tag: string | undefined = slug?.[0];
   if (tag === 'All') tag = undefined;
-
-  return { page, search, tag, slug };
+  return { tag, slug };
 }
 
 // ✅ SEO metadata
@@ -69,24 +63,20 @@ export async function generateMetadata({
 // ✅ Сторінка
 export default async function NotesFilterPage({
   params,
-  searchParams,
 }: NotesFilterPageProps) {
-  const { page, search, tag } = await getFilterParams(params, searchParams);
+  const { tag } = await getFilterParams(params);
 
   const queryClient = new QueryClient();
 
+  // Prefetch тільки для поточного тегу
   await queryClient.prefetchQuery<NotesResponse>({
-    queryKey: ['notes', page, search, tag],
-    queryFn: () => fetchNotes(page, search, 12, tag),
+    queryKey: ['notes', 1, '', tag], // сторінка 1 та порожній пошук
+    queryFn: () => fetchNotes(1, '', 12, tag),
   });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient
-        initialPage={page}
-        initialSearch={search}
-        initialTag={isNoteTag(tag) ? tag : 'All'}
-      />
+      <NotesClient initialTag={isNoteTag(tag) ? tag : 'All'} />
     </HydrationBoundary>
   );
 }
