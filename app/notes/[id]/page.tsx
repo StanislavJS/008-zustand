@@ -12,14 +12,11 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://your-vercel-domain.vercel.app";
 
 interface NotePageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
-// ✅ SEO для страницы заметки
-export async function generateMetadata({
-  params,
-}: NotePageProps): Promise<Metadata> {
-  const { id } = await params;
+export async function generateMetadata({ params }: NotePageProps): Promise<Metadata> {
+  const { id } = params;
   const note = await fetchNoteById(id);
 
   return {
@@ -42,7 +39,7 @@ export async function generateMetadata({
 }
 
 export default async function NotePreviewPage({ params }: NotePageProps) {
-  const { id } = await params;
+  const { id } = params;
 
   const queryClient = new QueryClient();
 
