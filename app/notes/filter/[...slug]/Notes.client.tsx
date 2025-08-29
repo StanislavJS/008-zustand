@@ -1,56 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDebounce } from 'use-debounce';
-import { useRouter, usePathname} from 'next/navigation';
 import type { NoteTag } from '@/types/note';
 import { fetchNotes } from '@/lib/api';
 import NoteList from '@/components/NoteList/NoteList';
-import Modal from '@/components/Modal/Modal';
 import SearchBox from '@/components/SearchBox/SearchBox';
 import Pagination from '@/components/Pagination/Pagination';
-import NoteForm from '@/components/NoteForm/NoteForm';
-import css from '@/components/NotePage/NotePage.module.css';
-import { useNoteStore } from '@/lib/store/noteStore';
 import Link from 'next/link';
-
+import css from '@/components/NotePage/NotePage.module.css';
 
 type NotesClientProps = {
-  initialPage: number;
-  initialSearch: string;
   initialTag: 'All' | NoteTag;
 };
 
-export default function NotesClient({
-  initialPage,
-  initialSearch,
-  initialTag,
-}: NotesClientProps) {
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const { clearDraft } = useNoteStore();
-
-  const router = useRouter();
-  const pathname = usePathname();
-  // const searchParams = useSearchParams();
-
-  // debounce тільки для пошуку (щоб не спамити API)
+export default function NotesClient({ initialTag }: NotesClientProps) {
+  const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm] = useDebounce(searchTerm, 800);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentTag, setCurrentTag] = useState(initialTag);
+
   const perPage = 12;
 
-  const {
-    data,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ['notes', debouncedSearchTerm, currentPage, initialTag],
+  useEffect(() => {
+    // При зміні тегу скидаємо сторінку
+    setCurrentPage(1);
+    setCurrentTag(initialTag);
+  }, [initialTag]);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['notes', debouncedSearchTerm, currentPage, currentTag],
     queryFn: () =>
       fetchNotes(
         currentPage,
         debouncedSearchTerm,
         perPage,
-        initialTag === 'All' ? undefined : initialTag
+        currentTag === 'All' ? undefined : currentTag
       ),
   });
 
@@ -61,13 +47,6 @@ export default function NotesClient({
     setSearchTerm(newTerm);
     setCurrentPage(1);
   };
-
-  const handleCloseModal = () => {
-    clearDraft();
-    router.back();
-  };
-
-  const isCreateRoute = pathname === '/notes/action/create';
 
   return (
     <div className={css.app}>
@@ -82,9 +61,9 @@ export default function NotesClient({
           />
         )}
 
-       <Link className={css.button} href="/notes/action/create">
-            Create note +
-      </Link>
+        <Link href="/notes/action/create" className={css.button}>
+          Create note +
+        </Link>
       </header>
 
       {isLoading && <p>Loading notes...</p>}
@@ -94,12 +73,6 @@ export default function NotesClient({
         <NoteList notes={notes} />
       ) : (
         !isLoading && <p className={css.emptyMessage}>No notes found.</p>
-      )}
-
-      {isCreateRoute && (
-        <Modal onClose={handleCloseModal}>
-          <NoteForm onClose={handleCloseModal} />
-        </Modal>
       )}
     </div>
   );
