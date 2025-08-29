@@ -1,8 +1,16 @@
-// app/notes/filter/[...slug]/page.tsx
 import { fetchNotes } from '@/lib/api';
 import NotesClient from './Notes.client';
 import type { NotesResponse, NoteTag } from '@/types/note';
-import { dehydrate, QueryClient, HydrationBoundary } from '@tanstack/react-query';
+import {
+  dehydrate,
+  QueryClient,
+  HydrationBoundary,
+} from '@tanstack/react-query';
+import type { Metadata } from 'next';
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  'https://your-vercel-domain.vercel.app';
 
 function isNoteTag(value: string | undefined): value is NoteTag {
   return ['Work', 'Personal', 'Meeting', 'Shopping', 'Todo'].includes(value ?? '');
@@ -13,14 +21,45 @@ interface NotesFilterPageProps {
   searchParams: Promise<{ page?: string; search?: string }>;
 }
 
-export default async function NotesFilterPage({ params, searchParams }: NotesFilterPageProps) {
+// ✅ SEO metadata
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string[] }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const filterName = slug?.join(' / ') || 'All';
+
+  return {
+    title: `Notes filtered by ${filterName} | NoteHub`,
+    description: `Browse notes filtered by ${filterName} in NoteHub.`,
+    openGraph: {
+      title: `Notes filtered by ${filterName} | NoteHub`,
+      description: `Browse notes filtered by ${filterName} in NoteHub.`,
+      url: `${SITE_URL}/notes/filter/${slug?.join('/') ?? ''}`,
+      images: [
+        {
+          url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'NoteHub Filtered Notes OG Image',
+        },
+      ],
+    },
+  };
+}
+
+export default async function NotesFilterPage({
+  params,
+  searchParams,
+}: NotesFilterPageProps) {
   const { slug } = await params;
   const { page: rawPage, search: rawSearch } = await searchParams;
 
   const page = Number(rawPage) || 1;
   const search = rawSearch || '';
 
-  let tag: string | undefined = slug[0];
+  let tag: string | undefined = slug?.[0];
   if (tag === 'All') tag = undefined;
 
   const queryClient = new QueryClient();
@@ -30,15 +69,13 @@ export default async function NotesFilterPage({ params, searchParams }: NotesFil
     queryFn: () => fetchNotes(page, search, 12, tag),
   });
 
-  const dehydratedState = dehydrate(queryClient);
-
   return (
-  <HydrationBoundary state={dehydratedState}>
-    <NotesClient
-      initialPage={page}
-      initialSearch={search}
-      initialTag={isNoteTag(tag) ? tag : 'All'}
-    />
-  </HydrationBoundary>
-);
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <NotesClient
+        initialPage={page}
+        initialSearch={search}
+        initialTag={isNoteTag(tag) ? tag : 'All'}
+      />
+    </HydrationBoundary>
+  );
 }

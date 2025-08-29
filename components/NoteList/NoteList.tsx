@@ -6,7 +6,7 @@ import Link from "next/link";
 
 interface NoteListProps {
   notes?: Note[];
-  onSelectNote: (note: Note) => void;
+  onSelectNote?: (note: Note) => void;
 }
 
 export default function NoteList({ notes = [] }: NoteListProps) {
