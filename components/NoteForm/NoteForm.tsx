@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 interface NoteFormProps {
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export default function NoteForm({ onClose }: NoteFormProps) {
@@ -23,10 +23,13 @@ export default function NoteForm({ onClose }: NoteFormProps) {
       toast.success('📝 Note created successfully');
       clearDraft();
       router.push('/notes/filter/All');
+      if (onClose) onClose();
     },
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setDraft({ [name]: value });
   };
@@ -85,10 +88,12 @@ export default function NoteForm({ onClose }: NoteFormProps) {
       </div>
 
       <div className={css.actions}>
-        <button type="button" className={css.cancelButton} onClick={onClose}>
-          Cancel
-        </button>
-        <button type="submit" className={css.submitButton} disabled={mutation.isLoading}>
+        {onClose && (
+          <button type="button" className={css.cancelButton} onClick={onClose}>
+            Cancel
+          </button>
+        )}
+        <button type="submit" className={css.submitButton} disabled={mutation.isPending}>
           Create note
         </button>
       </div>
