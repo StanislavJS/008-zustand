@@ -12,7 +12,7 @@ interface NotePreviewPageProps {
 }
 
 export default async function NotePreviewPage({ params }: NotePreviewPageProps) {
-  const { id } = await params; // ✅ Без await
+const { id } = params; // ✅ Удалён await
 
   const queryClient = new QueryClient();
 
