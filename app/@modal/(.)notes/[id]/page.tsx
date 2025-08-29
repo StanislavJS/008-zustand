@@ -1,3 +1,4 @@
+// app/@modal/(.)notes/[id]/page.tsx
 import {
   QueryClient,
   HydrationBoundary,
@@ -7,11 +8,11 @@ import { fetchNoteById } from '@/lib/api';
 import NotePreview from './NotePreview.client';
 
 interface NotePreviewPageProps {
-  params: Promise<{ id: string }>; // здесь Promise!
+  params: { id: string }; // ❌ УБРАН Promise
 }
 
 export default async function NotePreviewPage({ params }: NotePreviewPageProps) {
-  const { id } = await params; // await здесь обязателен
+  const { id } = await params; // ✅ Без await
 
   const queryClient = new QueryClient();
 
