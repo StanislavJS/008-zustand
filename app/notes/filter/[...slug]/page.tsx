@@ -1,3 +1,4 @@
+// app/notes/filter/[...slug]/page.tsx
 import { fetchNotes } from '@/lib/api';
 import NotesClient from './Notes.client';
 import type { NotesResponse, NoteTag } from '@/types/note';
@@ -17,15 +18,31 @@ function isNoteTag(value: string | undefined): value is NoteTag {
 }
 
 interface NotesFilterPageProps {
-  params: Promise<{ slug: string[] }>;
+  params: Promise<{ slug?: string[] }>;
   searchParams: Promise<{ page?: string; search?: string }>;
+}
+
+// 🔹 Хелпер, щоб уникати дублювання
+async function getFilterParams(
+  params: Promise<{ slug?: string[] }>,
+  searchParams: Promise<{ page?: string; search?: string }>
+) {
+  const { slug } = await params;
+  const { page: rawPage, search: rawSearch } = await searchParams;
+
+  const page = Number(rawPage) || 1;
+  const search = rawSearch || '';
+  let tag: string | undefined = slug?.[0];
+  if (tag === 'All') tag = undefined;
+
+  return { page, search, tag, slug };
 }
 
 // ✅ SEO metadata
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string[] }>;
+  params: Promise<{ slug?: string[] }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const filterName = slug?.join(' / ') || 'All';
@@ -49,18 +66,12 @@ export async function generateMetadata({
   };
 }
 
+// ✅ Сторінка
 export default async function NotesFilterPage({
   params,
   searchParams,
 }: NotesFilterPageProps) {
-  const { slug } = await params;
-  const { page: rawPage, search: rawSearch } = await searchParams;
-
-  const page = Number(rawPage) || 1;
-  const search = rawSearch || '';
-
-  let tag: string | undefined = slug?.[0];
-  if (tag === 'All') tag = undefined;
+  const { page, search, tag } = await getFilterParams(params, searchParams);
 
   const queryClient = new QueryClient();
 

@@ -1,6 +1,8 @@
+'use client';
+
 import css from './Modal.module.css';
 import { createPortal } from 'react-dom';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 interface ModalProps {
   onClose: () => void;
@@ -8,13 +10,12 @@ interface ModalProps {
 }
 
 export default function Modal({ onClose, children }: ModalProps) {
-  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  };
+  const [mounted, setMounted] = useState(false);
 
+  // ✅ портал підключається тільки після монтування
   useEffect(() => {
+    setMounted(true);
+
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -30,6 +31,14 @@ export default function Modal({ onClose, children }: ModalProps) {
     };
   }, [onClose]);
 
+  if (!mounted) return null;
+
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
   return createPortal(
     <div
       className={css.backdrop}
@@ -37,9 +46,7 @@ export default function Modal({ onClose, children }: ModalProps) {
       role="dialog"
       aria-modal="true"
     >
-      <div className={css.modal}>
-        {children}
-      </div>
+      <div className={css.modal}>{children}</div>
     </div>,
     document.body
   );

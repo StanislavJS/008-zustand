@@ -12,12 +12,20 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://your-vercel-domain.vercel.app";
 
 interface NotePageProps {
-  params: Promise<{ id: string }>; // params — промис!
+  params: Promise<{ id: string }>; // ✅ Next.js App Router дає проміс
 }
 
-export async function generateMetadata({ params }: NotePageProps): Promise<Metadata> {
-  const { id } = await params; // обязательно await
+// 🔹 Хелпер, щоб не дублювати код
+async function getNoteByParams(params: Promise<{ id: string }>) {
+  const { id } = await params;
   const note = await fetchNoteById(id);
+  return { id, note };
+}
+
+export async function generateMetadata({
+  params,
+}: NotePageProps): Promise<Metadata> {
+  const { id, note } = await getNoteByParams(params);
 
   return {
     title: `${note.title} | NoteHub`,
@@ -39,14 +47,11 @@ export async function generateMetadata({ params }: NotePageProps): Promise<Metad
 }
 
 export default async function NotePreviewPage({ params }: NotePageProps) {
-  const { id } = await params; // await здесь тоже обязателен!
+  const { id, note } = await getNoteByParams(params);
 
   const queryClient = new QueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ["note", id],
-    queryFn: () => fetchNoteById(id),
-  });
+  // 💡 одразу кладемо note у кеш, щоб не робити повторний fetch
+  queryClient.setQueryData(["note", id], note);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

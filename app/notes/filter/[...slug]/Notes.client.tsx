@@ -62,14 +62,9 @@ export default function NotesClient({
     setCurrentPage(1);
   };
 
-  const handleOpenModal = () => {
-    clearDraft();
-    router.push('/notes/action/create'); // 🚀 переход вместо локального стейта
-  };
-
   const handleCloseModal = () => {
     clearDraft();
-    router.back(); // возвращаемся к /notes/filter/All
+    router.back();
   };
 
   const isCreateRoute = pathname === '/notes/action/create';
